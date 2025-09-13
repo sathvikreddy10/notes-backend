@@ -8,31 +8,13 @@ dotenv.config();
 
 const app = express();
 
-// --- CORS: allow your Vercel site (and optional localhost) ---
-const allowList = (process.env.ALLOWED_ORIGIN || "")
-  .split(",")
-  .map(s => s.trim())
-  .filter(Boolean);
-
-// If ALLOWED_ORIGIN is empty, allow all (handy while debugging).
-const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true); // non-browser or same-origin
-    if (allowList.length === 0 || allowList.includes(origin)) return cb(null, true);
-    return cb(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false, // you aren't using cookies
-};
-
-// CORS MUST be before your routes
-app.use(cors(corsOptions));
-// make sure preflight succeeds everywhere
-app.options("*", cors(corsOptions));
-
 app.use(helmet());
 app.use(express.json({ limit: "2mb" })); // allow decent notes size
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGIN || "http://localhost:3000",
+  })
+);
 
 // rate limits
 app.use("/ask", rateLimit({ windowMs: 60_000, max: 30 }));
@@ -115,6 +97,5 @@ const server = app.listen(port, () =>
 server.requestTimeout = 240_000; // 4 min
 server.headersTimeout = 250_000; // must be > requestTimeout
 server.keepAliveTimeout = 245_000;
-
 
 
